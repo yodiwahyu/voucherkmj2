@@ -232,7 +232,7 @@
     var note=(eligible&&d.periode===curP)?'<div class="note">⏳ Bulan ini belum berakhir. Status dapat berubah jika ada keterlambatan atau pulang cepat sampai akhir bulan.</div>':'';
     var status=eligible
       ?'<div class="status ok"><div class="ic"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><h2>Selamat! Anda berhak mendapatkan VOUCHER</h2><p>Periode '+esc(periodLabel(d.periode))+'</p>'+note+'</div>'
-      :'<div class="status bad"><div class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></div><h2>Maaf, Anda belum berhak voucher</h2><p>Periode '+esc(periodLabel(d.periode))+'</p>'+reasons+'</div>';
+      :'<div class="status bad"><div class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></div><h2>Maaf, Anda belum berhak mendapatkan voucher</h2><p>Periode '+esc(periodLabel(d.periode))+'</p>'+reasons+'</div>';
 
     var info='<div class="card"><h3 class="sec-title">Informasi Karyawan</h3><dl class="info" style="margin:0">'
       +'<dt>NIK</dt><dd>'+esc(e.nik)+'</dd>'
