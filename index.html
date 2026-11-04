@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1d4ed8">
-<title>Cek Voucher Indomaret</title>
+<title>Cek Voucher KMJ2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -37,6 +37,10 @@
     padding:calc(28px + env(safe-area-inset-top)) 20px 78px;text-align:center}
   .hero .badge{width:56px;height:56px;border-radius:18px;background:rgba(255,255,255,.18);
     display:grid;place-items:center;margin:0 auto 12px;backdrop-filter:blur(6px)}
+  .badge img{display:none;height:52px;width:auto;max-width:240px;object-fit:contain}
+  .hero .badge.has-logo{width:auto;height:auto;padding:10px 20px;background:#fff;border-radius:18px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+  .hero .badge.has-logo svg{display:none}
+  .hero .badge.has-logo img{display:block}
   .hero h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.2px}
   .hero p{margin:6px 0 0;font-size:14px;opacity:.9}
   main{max-width:520px;margin:-54px auto 0;padding:0 14px;display:flex;flex-direction:column;gap:14px}
@@ -114,10 +118,11 @@
 </head>
 <body>
   <header class="hero">
-    <div class="badge">
+    <div class="badge" id="badge">
+      <img id="logo" alt="Logo perusahaan" decoding="async">
       <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v6a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2z"/><path d="M13 7v10" stroke-dasharray="2 2.5"/></svg>
     </div>
-    <h1>PT Kanindo Makmur Jaya (Factory 2)</h1>
+    <h1>PT Kanindo Makmur Jaya 2</h1>
     <p>Cek Status Voucher Reward Zero Absensi</p>
   </header>
 
@@ -126,7 +131,7 @@
       <label for="nik">NIK Karyawan</label>
       <div class="input-wrap">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.6-1.5 1.7-2 3-2s2.4.5 3 2M15 9h3M15 13h3"/></svg>
-        <input type="text" id="nik" placeholder="Contoh: 0226070012" enterkeyhint="search" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <input type="text" id="nik" placeholder="Contoh: 2016010088" enterkeyhint="search" autocapitalize="off" autocorrect="off" spellcheck="false">
       </div>
       <button class="btn" id="btn" type="submit"><span id="btnText">Cek Status Voucher</span></button>
       <div class="hint">Masukkan NIK untuk melihat apakah Anda berhak voucher bulan ini</div>
@@ -141,6 +146,16 @@
 <script>
 (function(){
   var API = (window.APP_CONFIG||{}).API_URL;
+  (function(){
+    var u=(window.APP_CONFIG||{}).LOGO_URL; if(!u) return;
+    var img=document.getElementById('logo');
+    img.onload=function(){
+      document.getElementById('badge').classList.add('has-logo');
+      var l=document.createElement('link'); l.rel='icon'; l.href=u; document.head.appendChild(l);
+    };
+    img.onerror=function(){ img.remove(); };
+    img.src=u;
+  })();
   var MONTHS=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
   var DOW=['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
   var LEGEND=[['K','Kerja'],['NW','Not Work Day'],['HW','Holiday Working'],['SH','Shift'],['A','Alpha'],['T','Terlambat'],['PC','Pulang Cepat'],['I','Ijin'],['IT','Ijin Terlambat'],['IPC','Ijin Pulang Cepat'],['SAK','Sakit Tanpa Surat Dokter'],['CSD','Cuti Surat Dokter'],['CTH','Cuti Tahunan'],['CMN','Cuti Menikah'],['CAN','Cuti Anak Nikah'],['IR','Cuti Anak Khitanan'],['CIM','Cuti Istri Melahirkan'],['CML','Cuti Melahirkan'],['CG','Cuti Keguguran'],['CH','Cuti Haid'],['CK','Cuti Kematian']];
