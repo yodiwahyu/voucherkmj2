@@ -38,6 +38,7 @@
 </head>
 <body>
 <div class="wrap">
+  <img id="logo" alt="Logo perusahaan" style="display:none;height:44px;width:auto">
   <h1>Admin HRD</h1>
   <p class="sub">Upload data absensi &amp; SP karyawan per bulan. <a href="index.html">← Halaman cek voucher</a></p>
 
@@ -82,6 +83,13 @@
   var API=(window.APP_CONFIG||{}).API_URL;
   var $=function(s){return document.querySelector(s);};
   var parsed=null;
+  (function(){
+    var u=(window.APP_CONFIG||{}).LOGO_URL; if(!u) return;
+    var img=document.getElementById('logo');
+    img.onload=function(){ img.style.display='block'; };
+    img.onerror=function(){ img.remove(); };
+    img.src=u;
+  })();
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 
   var now=new Date();
@@ -92,9 +100,9 @@
   $('#pw').addEventListener('input',refresh);
 
   $('#tpl').addEventListener('click',function(){
-    var head=['NIK','Nama','Department','Status SP','W.D','LB'];
+    var head=['NIK','Nama','Department','Status SP','W.D','LB','Join Date'];
     for(var d=1;d<=31;d++) head.push(String(d));
-    var r1=['2016010088','Contoh Karyawan A','HRD','Tidak Ada SP','22','9'], r2=['2018020150','Contoh Karyawan B','Produksi','SP1','22','9'];
+    var r1=['2016010088','Contoh Karyawan A','HRD','Tidak Ada SP','22','9','15-10-2014'], r2=['2018020150','Contoh Karyawan B','Produksi','SP1','22','9','20-03-2018'];
     for(var i=1;i<=31;i++){ var wk=((i+2)%7===0)||((i+3)%7===0); r1.push(wk?'NW':'K'); r2.push(i===5?'T':(wk?'NW':'K')); }
     var ws=XLSX.utils.aoa_to_sheet([head,r1,r2]);
     var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Data');
@@ -125,7 +133,7 @@
     var find=function(re){return head.findIndex(function(x){return re.test(x);});};
     var iNik=find(/^(NO\.? ?)?NIK$/), iNama=find(/^(NAMA|NAME)$/),
         iDept=find(/^(DEPARTMENT|DEPARTEMEN|DEPT\.?)$/), iSp=find(/^(STATUS )?SP( \(\d+\))?$/),
-        iWd=find(/^W\.?D$/), iLb=find(/^LB$/);
+        iWd=find(/^W\.?D$/), iLb=find(/^LB$/), iJoin=find(/^JOIN ?DATE$/);
     if(iNama<0) throw new Error('Kolom "Nama" / "Name" tidak ditemukan.');
 
     var start=h+1, dayIdx=scanDays(aoa[h]);
@@ -152,17 +160,37 @@
         sp:iSp>=0?String(row[iSp]||'').trim():'',
         wd:iWd>=0?String(row[iWd]==null?'':row[iWd]).trim():'',
         lb:iLb>=0?String(row[iLb]==null?'':row[iLb]).trim():'',
+        join:iJoin>=0?String(row[iJoin]==null?'':row[iJoin]).trim():'',
         days:days
       });
     }
-    return {rows:rows,periode:periode,hasSp:iSp>=0,hasWd:iWd>=0&&iLb>=0};
+    return {rows:rows,periode:periode,hasSp:iSp>=0,hasWd:iWd>=0&&iLb>=0,hasJoin:iJoin>=0};
   }
 
-  function isEligible(r,dim){
+  var ABSENCE=['A','I','SAK','CSD','CTH','CMN','CAN','IR','CIM','CML','CG','CKG','CH','CK'];
+  function parseJoin(s){
+    s=String(s||'').trim();
+    var m=/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/.exec(s); if(m) return {y:+m[3],m:+m[2],d:+m[1]};
+    m=/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/.exec(s); if(m) return {y:+m[1],m:+m[2],d:+m[3]};
+    m=/^(\d{4})(\d{2})(\d{2})$/.exec(s); if(m) return {y:+m[1],m:+m[2],d:+m[3]};
+    return null;
+  }
+  // Masuk/keluar di tengah bulan hanya masalah jika ada hari kerja (Sen-Jum) yang terlewat
+  function isPartial(r,dim,y,mo){
+    if(r.wd===''||r.lb==='') return false;
+    var absent=0; for(var i=0;i<dim;i++) if(ABSENCE.indexOf(r.days[i])>=0) absent++;
+    var missing=dim-((+r.wd)+(+r.lb)+absent);
+    if(missing<=0) return false;
+    var jd=parseJoin(r.join);
+    var before=(jd&&jd.y===y&&jd.m===mo)?Math.min(Math.max(jd.d-1,0),missing):0;
+    var after=missing-before;
+    function weekday(a,b){ for(var d=a;d<=b;d++){var w=new Date(y,mo-1,d).getDay(); if(w>=1&&w<=5) return true;} return false; }
+    return (before>0&&weekday(1,before))||(after>0&&weekday(dim-after+1,dim));
+  }
+  function isEligible(r,dim,y,mo){
     if(NO_SP.indexOf(r.sp.toUpperCase())<0) return false;
     for(var i=0;i<dim;i++) if(BAD.indexOf(r.days[i])>=0) return false;
-    if(r.wd!==''&&r.lb!==''&&(+r.wd)+(+r.lb)!==dim) return false;
-    return true;
+    return !isPartial(r,dim,y,mo);
   }
 
   function showPreview(){
@@ -171,12 +199,13 @@
     var p=per.split('-'), dim=p.length===2?new Date(+p[0],+p[1],0).getDate():31;
     var rows=parsed.rows;
     var withSp=rows.filter(function(r){return NO_SP.indexOf(r.sp.toUpperCase())<0;}).length;
-    var elig=rows.filter(function(r){return isEligible(r,dim);}).length;
+    var elig=rows.filter(function(r){return isEligible(r,dim,+p[0],+p[1]);}).length;
     var nikSet={}, dup=0; rows.forEach(function(r){ if(nikSet[r.nik]) dup++; nikSet[r.nik]=1; });
     var sample=rows.slice(0,5).map(function(r){return '<tr><td>'+esc(r.nik)+'</td><td>'+esc(r.nama)+'</td><td>'+esc(r.department)+'</td><td>'+esc(NO_SP.indexOf(r.sp.toUpperCase())<0?r.sp:'-')+'</td></tr>';}).join('');
     var warn=[];
     if(!parsed.hasSp) warn.push('Kolom SP tidak ditemukan, semua karyawan dianggap tanpa SP.');
-    if(!parsed.hasWd) warn.push('Kolom W.D / LB tidak ditemukan, aturan "tercatat penuh sebulan" tidak diperiksa.');
+    if(!parsed.hasWd) warn.push('Kolom W.D / LB tidak ditemukan, aturan masuk/keluar di tengah bulan tidak diperiksa.');
+    else if(!parsed.hasJoin) warn.push('Kolom Join Date tidak ditemukan, karyawan yang masuk di tengah bulan bisa tidak terdeteksi dengan benar.');
     $('#preview').innerHTML='<div class="msg ok">✔ <b>'+rows.length+'</b> karyawan terbaca · <b>'+withSp+'</b> memiliki SP'+(dup?' · <b>'+dup+'</b> NIK ganda (baris terakhir dipakai)':'')+'<br>Perkiraan berhak voucher: <b>'+elig+'</b> karyawan</div>'
       +(warn.length?'<div class="msg info">⚠ '+warn.map(esc).join('<br>⚠ ')+'</div>':'')
       +'<div class="scroll"><table><tr><th>NIK</th><th>Nama</th><th>Dept</th><th>SP</th></tr>'+sample+'</table></div><p class="sub" style="margin:8px 0 0;font-size:12px">Menampilkan 5 baris pertama.</p>';
