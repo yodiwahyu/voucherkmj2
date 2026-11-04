@@ -226,7 +226,11 @@
       var g={};
       d.violations.forEach(function(v){(g[v.code]=g[v.code]||[]).push(v.day);});
       Object.keys(g).forEach(function(c){items.push((LABEL[c]?esc(LABEL[c]):'Kode')+' (<b>'+esc(c)+'</b>) pada tanggal '+g[c].join(', '));});
-      if(d.partialMonth) items.push('Belum tercatat penuh satu bulan (masuk atau keluar di tengah bulan)');
+      if(d.partialMonth&&d.partial){
+        var pt=d.partial;
+        if(pt.blockedBefore) items.push('Mulai bekerja pada tanggal <b>'+(pt.before+1)+'</b>, setelah hari kerja pertama bulan ini');
+        if(pt.blockedAfter) items.push('Tidak tercatat setelah tanggal <b>'+(d.daysInMonth-pt.after)+'</b> (keluar di tengah bulan)');
+      }
       reasons='<ul class="reasons">'+items.map(function(i){return '<li>'+i+'</li>';}).join('')+'</ul>';
     }
     var note=(eligible&&d.periode===curP)?'<div class="note">⏳ Bulan ini belum berakhir. Status dapat berubah jika ada keterlambatan atau pulang cepat sampai akhir bulan.</div>':'';
